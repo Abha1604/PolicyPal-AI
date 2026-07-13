@@ -1,0 +1,6 @@
+# ============================
+# PolicyPal AI
+# Multi-Agent Contract Analysis System
+# ============================
+
+streamlit>=1.59.0
