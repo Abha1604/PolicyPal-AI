@@ -1,0 +1,73 @@
+{
+  "contract_type": "Employment Contract",
+  "parties": [
+    {
+      "name": "Bright Tech Solutions Pvt. Ltd.",
+      "role": "Employer"
+    },
+    {
+      "name": "the individual named in Schedule A",
+      "role": "Employee"
+    }
+  ],
+  "important_dates": [
+    {
+      "type": "start_date",
+      "value": "1 January 2026",
+      "source_section": "SECTION 3 — TERM"
+    },
+    {
+      "type": "payment_due_date",
+      "value": "last working day of each month",
+      "source_section": "SECTION 6 — COMPENSATION"
+    },
+    {
+      "type": "notice_period",
+      "value": "90 days",
+      "source_section": "SECTION 14 — TERMINATION"
+    }
+  ],
+  "financial_obligations": [
+    {
+      "type": "salary",
+      "amount": "₹80,000",
+      "responsible_party": "Employer",
+      "source_section": "SECTION 6 — COMPENSATION"
+    },
+    {
+      "type": "training_cost_recovery",
+      "amount": "₹80,000",
+      "responsible_party": "Employee",
+      "source_section": "SECTION 18 — TRAINING EXPENSE RECOVERY"
+    }
+  ],
+  "party_obligations": [
+    {
+      "party": "Employee",
+      "obligation": "The Employee agrees to keep all proprietary information confidential both during employment and indefinitely after termination of this agreement.",
+      "source_section": "SECTION 21 — CONFIDENTIALITY"
+    },
+    {
+      "party": "Employee",
+      "obligation": "For a period of 12 months following termination of employment for any reason, the Employee shall not accept employment with, or provide services to, any company that directly competes with the Employer's business.",
+      "source_section": "SECTION 24 — NON-COMPETE"
+    }
+  ],
+  "clauses": [
+    {
+      "clause_type": "Termination",
+      "original_text": "Either party may terminate this agreement by providing 90 days' written notice. The Employer may terminate immediately for cause as defined in Schedule B.",
+      "source_section": "SECTION 14 — TERMINATION"
+    },
+    {
+      "clause_type": "Confidentiality",
+      "original_text": "The Employee agrees to keep all proprietary information confidential both during employment and indefinitely after termination of this agreement.",
+      "source_section": "SECTION 21 — CONFIDENTIALITY"
+    },
+    {
+      "clause_type": "Non-Compete",
+      "original_text": "For a period of 12 months following termination of employment for any reason, the Employee shall not accept employment with, or provide services to, any company that directly competes with the Employer's business.",
+      "source_section": "SECTION 24 — NON-COMPETE"
+    }
+  ]
+}

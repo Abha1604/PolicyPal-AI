@@ -1,5 +1,13 @@
+# Virtual Environment
 venv/
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+# Environment variables
 .env
 .vscode/
+chroma_db/
+.cache/
+
