@@ -1,88 +1,154 @@
-def chunk_text(text, chunk_size=500, overlap=100):
-    """
-    Splits text into overlapping chunks.
+"""
+chunker.py
 
-    Priority for chunk ending:
-    1. Paragraph break (\n\n)
-    2. Sentence end (. ? !)
+Splits cleaned text into overlapping chunks.
+
+The chunker tries to create chunks at natural text boundaries.
+
+Priority:
+1. Paragraph
+2. Sentence
+3. Word
+4. Hard cut
+
+Output Example:
+[
+    {
+        "chunk_id": 1,
+        "text": "...",
+        "start_char": 0,
+        "end_char": 500
+    }
+]
+"""
+
+
+def _find_chunk_end(text: str, max_end: int, search_window: int = 100):
+    """
+    Find a natural place to end a chunk.
+
+    Looks ahead for:
+    1. Paragraph break
+    2. Sentence end
     3. Space
-    4. Fixed chunk size
-
-    Parameters:
-        text (str): Cleaned document text
-        chunk_size (int): Approximate size of each chunk
-        overlap (int): Number of overlapping characters
-
-    Returns:
-        list: List of dictionaries containing chunk_id and text
     """
+
+    if max_end >= len(text):
+        return len(text)
+
+    limit = min(max_end + search_window, len(text))
+
+    window = text[max_end:limit]
+
+    # -------------------------
+    # Paragraph
+    # -------------------------
+
+    pos = window.find("\n\n")
+
+    if pos != -1:
+        return max_end + pos + 2
+
+    # -------------------------
+    # Sentence
+    # -------------------------
+
+    for symbol in [".", "!", "?"]:
+
+        pos = window.find(symbol)
+
+        if pos != -1:
+            return max_end + pos + 1
+
+    # -------------------------
+    # Word Boundary
+    # -------------------------
+
+    pos = window.find(" ")
+
+    if pos != -1:
+        return max_end + pos
+
+    # Hard cut
+
+    return max_end
+
+
+def _find_next_start(text: str, start: int):
+    """
+    Move the next chunk start to the beginning
+    of the next complete word.
+    """
+
+    if start <= 0:
+        return 0
+
+    while start < len(text):
+
+        if text[start] == " ":
+            return start + 1
+
+        start += 1
+
+    return start
+
+
+def create_chunks(
+    text: str,
+    chunk_size: int = 500,
+    chunk_overlap: int = 100,
+):
+    """
+    Split cleaned text into overlapping chunks.
+
+    Parameters
+    ----------
+    text : str
+
+    chunk_size : int
+
+    chunk_overlap : int
+
+    Returns
+    -------
+    list
+    """
+
+    if chunk_overlap >= chunk_size:
+        raise ValueError(
+            "chunk_overlap must be smaller than chunk_size"
+        )
 
     chunks = []
 
+    chunk_id = 1
+
     start = 0
-    chunk_number = 1
-    text_length = len(text)
 
-    while start < text_length:
+    while start < len(text):
 
-        # Tentative end position
-        end = min(start + chunk_size, text_length)
+        max_end = min(start + chunk_size, len(text))
 
-        # Try to find a better place to end the chunk
-        if end < text_length:
+        end = _find_chunk_end(text, max_end)
 
-            search_start = max(start, end - 150)
+        chunk_text = text[start:end].strip()
 
-            # Priority 1: Paragraph break
-            paragraph = text.rfind("\n\n", search_start, end)
+        chunks.append(
+            {
+                "chunk_id": chunk_id,
+                "text": chunk_text,
+                "start_char": start,
+                "end_char": end,
+            }
+        )
 
-            if paragraph != -1:
-                end = paragraph + 2
+        chunk_id += 1
 
-            else:
-
-                # Priority 2: Sentence end
-                sentence = max(
-                    text.rfind(". ", search_start, end),
-                    text.rfind("? ", search_start, end),
-                    text.rfind("! ", search_start, end),
-                )
-
-                if sentence != -1:
-                    end = sentence + 2
-
-                else:
-
-                    # Priority 3: Space
-                    space = text.rfind(" ", search_start, end)
-
-                    if space != -1:
-                        end = space
-
-        chunk = text[start:end].strip()
-
-        if chunk:
-            chunks.append({
-                "chunk_id": f"chunk_{chunk_number}",
-                "text": chunk
-            })
-            chunk_number += 1
-
-        # Finished?
-        if end >= text_length:
+        if end >= len(text):
             break
 
-        # -------------------------------
-        # Overlap
-        # -------------------------------
-        start = max(end - overlap, 0)
+        next_start = end - chunk_overlap
 
-        # Move to the beginning of the next word
-        while start < text_length and text[start] not in [" ", "\n"]:
-            start += 1
-
-        # Skip spaces/newlines
-        while start < text_length and text[start] in [" ", "\n"]:
-            start += 1
+        start = _find_next_start(text, next_start)
 
     return chunks
