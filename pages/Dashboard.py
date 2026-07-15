@@ -1,6 +1,32 @@
 import streamlit as st
 
+from components.Navbar import render_navbar
 from utils.integration import get_standard_clause_status
+
+st.set_page_config(
+    page_title="Dashboard — PolicyPal AI",
+    layout="wide",
+)
+
+st.markdown(
+    """
+<style>
+[data-testid="stSidebar"] { display: none; }
+[data-testid="collapsedControl"] { display: none; }
+.block-container {
+    padding-top: 0.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+iframe[title="streamlit.components.v1.html"] {
+    margin-bottom: -8px;
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+render_navbar()
 
 if "analysis" not in st.session_state:
     st.warning("No contract analyzed yet.")

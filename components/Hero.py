@@ -37,19 +37,22 @@ def render_hero():
         </p>
         """, unsafe_allow_html=True)
 
-        c1, c2 = st.columns([1,1])
-
-        with c1:
-            st.button(
-                "Upload Contract",
-                use_container_width=True
-            )
-
-        with c2:
-            st.button(
-                "Learn More",
-                use_container_width=True
-            )
+        st.markdown("""
+            <a href="#upload-section" style="text-decoration:none;">
+                <button style="
+                    width:100%;
+                    padding:0.75rem;
+                    border-radius:8px;
+                    border:1px solid #444;
+                    background:#1f1f1f;
+                    color:white;
+                    font-size:16px;
+                    cursor:pointer;
+                ">
+                    Upload Contract
+                </button>
+            </a>
+            """, unsafe_allow_html=True)
 
     with right:
 

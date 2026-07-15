@@ -12,6 +12,9 @@ ANALYSIS_TYPES = [
 
 
 def render_upload_section():
+    st.markdown("""
+    <div id="upload-section"></div>
+    """, unsafe_allow_html=True)
 
     st.markdown("## Upload & Analyze")
 

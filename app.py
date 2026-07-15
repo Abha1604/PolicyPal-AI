@@ -35,8 +35,8 @@ st.markdown("""
     padding-top:0.5rem;
     padding-left:2rem;
     padding-right:2rem;
+    padding-bottom:1rem;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
