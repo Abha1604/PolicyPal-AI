@@ -5,13 +5,18 @@ Combines rule-based risk scoring with LLM-generated insights using Google Gemini
 
 import json
 import os
-import google.generativeai as genai
 
-from schemas import ClausesInput, ContractAnalysisInput, ContractAnalysisOutput, RiskFinding
-from risk import calculate_risk
+from member2.contract_intelligence_agent import GeminiClient
+
+from .schemas import ClausesInput, ContractAnalysisInput, ContractAnalysisOutput, RiskFinding
+from .risk import calculate_risk
 
 
-def analyze_contract(clauses: ClausesInput | dict, question: str) -> ContractAnalysisOutput:
+def analyze_contract(
+    clauses: ClausesInput | dict,
+    question: str,
+    include_llm: bool = True,
+) -> ContractAnalysisOutput:
     """
     Analyze a contract for risks and generate explanations using Google Gemini.
     
@@ -35,19 +40,25 @@ def analyze_contract(clauses: ClausesInput | dict, question: str) -> ContractAna
     
     # Step 2: Prepare context for LLM
     clauses_context = _format_clauses_for_llm(clauses)
-    
-    # Step 3: Configure Gemini API
-    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not include_llm:
+        return ContractAnalysisOutput(
+            summary=_build_extraction_summary(clauses),
+            risk_score=risk_score,
+            risk_level=risk_level,
+            risks=risks,
+            answer="Clause extraction complete. Review the extracted clauses on the dashboard.",
+        )
+
+    # Step 3: Call Gemini API (same client/model as Member 2)
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise ValueError(
             "GEMINI_API_KEY environment variable not set.\n"
             "Get your free API key at: https://aistudio.google.com/apikey\n"
             "Then run: export GEMINI_API_KEY='your-key-here'"
         )
-    
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-flash-latest")
-    
+
     system_prompt = """You are an expert contract analyst. You will be provided with:
 1. Parsed contract clauses
 2. A risk assessment
@@ -65,9 +76,7 @@ IMPORTANT: Always respond with ONLY valid JSON (no markdown, no explanation). Fo
   "answer": "..."
 }"""
 
-    user_message = f"""{system_prompt}
-
-Contract Clauses:
+    user_message = f"""Contract Clauses:
 {clauses_context}
 
 Risk Assessment (calculated by rules):
@@ -79,10 +88,11 @@ User Question: {question}
 
 Respond ONLY as valid JSON with keys "summary" and "answer". No markdown, no code blocks, no other text."""
 
-    response = model.generate_content(user_message)
-    
-    # Step 4: Parse LLM response
-    response_text = response.text
+    llm_client = GeminiClient()
+    response_text = llm_client.complete(
+        system_prompt,
+        [{"role": "user", "content": user_message}],
+    )
     
     try:
         # Try to extract JSON from response
@@ -112,17 +122,30 @@ Respond ONLY as valid JSON with keys "summary" and "answer". No markdown, no cod
     )
 
 
+def _build_extraction_summary(clauses: ClausesInput) -> str:
+    found = []
+    for clause_name in ["payment", "renewal", "termination", "confidentiality", "penalty"]:
+        clause = getattr(clauses, clause_name, None)
+        if clause and clause.found:
+            found.append(clause_name.replace("_", " ").title())
+
+    if found:
+        return f"Extracted clauses include: {', '.join(found)}."
+    return "No standard clause categories were detected in this contract."
+
+
 def _format_clauses_for_llm(clauses: ClausesInput) -> str:
     """
     Format clauses into readable text for LLM context.
     """
     output = []
-    
+
     for clause_name in ["payment", "renewal", "termination", "confidentiality", "penalty"]:
         clause = getattr(clauses, clause_name, None)
-        if clause:
-            status = "✓ FOUND" if clause.found else "✗ MISSING"
+        if clause and clause.found:
             text = clause.text if clause.text else "(empty)"
-            output.append(f"{clause_name.upper()}: {status}\n  {text}")
-    
-    return "\n".join(output) if output else "No clauses found"
+            output.append(f"{clause_name.upper()}: FOUND\n  {text}")
+        else:
+            output.append(f"{clause_name.upper()}: NOT FOUND")
+
+    return "\n".join(output)

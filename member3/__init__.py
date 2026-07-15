@@ -9,9 +9,9 @@ Public API:
 - calculate_risk(clauses) → dict
 """
 
-from agent import analyze_contract
-from risk import calculate_risk
-from schemas import (
+from .agent import analyze_contract
+from .risk import calculate_risk
+from .schemas import (
     ClauseInfo,
     ClausesInput,
     ContractAnalysisInput,

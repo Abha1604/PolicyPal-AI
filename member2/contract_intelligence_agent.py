@@ -68,53 +68,83 @@ class GeminiClient:
         pip install google-genai
         export GEMINI_API_KEY="your-key-here"   # from aistudio.google.com
 
-    Free-tier-friendly models (as of mid-2026): "gemini-2.5-flash-lite" or
-    "gemini-2.5-flash-lite". Avoid "gemini-2.5-pro" on the free tier —
+    Free-tier-friendly models (as of mid-2026): "gemini-3.1-flash-lite" or
+    "gemini-flash-lite-latest". Avoid "gemini-2.5-pro" on the free tier —
     it's capped very low (a handful of requests/day).
+
+    Note: "gemini-2.5-flash" and "gemini-flash-latest" (resolves to
+    gemini-3.5-flash) may hit strict free-tier quotas for new API keys.
     """
 
-    def __init__(self, model: str = "gemini-2.0-flash"):
-     from google import genai
-     import os
+    def __init__(self, model: str = "gemini-3.1-flash-lite"):
+        from google import genai
+        import os
 
-     api_key = (
-        os.getenv("GOOGLE_API_KEY")
-        or os.getenv("GEMINI_API_KEY")
-    )
-
-     if not api_key:
-        raise RuntimeError("Google API key not found.")
-
-     self.client = genai.Client(api_key=api_key)
-     self.model_name = model
-
-    def complete(self, system: str, messages: list[dict]) -> str:
-     from google.genai import types, errors
-     import time
-
-     prompt = system + "\n\n"
-
-     for m in messages:
-        prompt += f"{m['role'].upper()}:\n{m['content']}\n\n"
-
-     for attempt in range(5):
-        try:
-            response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0,
-                max_output_tokens=2048,
-            ),
+        api_key = (
+            os.getenv("GOOGLE_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
         )
 
+        if not api_key:
+            raise RuntimeError("Google API key not found.")
+
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = model
+
+    @staticmethod
+    def _extract_text(response) -> str:
+        if response.text:
             return response.text
+        if response.candidates:
+            parts = []
+            for part in response.candidates[0].content.parts or []:
+                if part.text:
+                    parts.append(part.text)
+            return "".join(parts)
+        return ""
 
-        except errors.ServerError:
-            print(f"Gemini is busy... retry {attempt + 1}/5")
-            time.sleep(5)
+    def complete(self, system: str, messages: list[dict]) -> str:
+        from google.genai import types, errors
+        import time
 
-     raise RuntimeError("Gemini service unavailable after 5 retries.")
+        contents = []
+        for m in messages:
+            role = "user" if m["role"] == "user" else "model"
+            contents.append(
+                types.Content(role=role, parts=[types.Part(text=m["content"])])
+            )
+
+        for attempt in range(5):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system,
+                        temperature=0,
+                        max_output_tokens=8192,
+                        response_mime_type="application/json",
+                    ),
+                )
+
+                text = self._extract_text(response)
+                if text.strip():
+                    return text
+
+                print(f"Gemini returned empty response... retry {attempt + 1}/5")
+                time.sleep(3)
+
+            except errors.ServerError:
+                print(f"Gemini is busy... retry {attempt + 1}/5")
+                time.sleep(5)
+            except errors.ClientError as e:
+                if getattr(e, "code", None) == 429:
+                    print(f"Gemini rate limited... retry {attempt + 1}/5")
+                    time.sleep(15)
+                else:
+                    raise
+
+        raise RuntimeError("Gemini service unavailable after 5 retries.")
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +188,10 @@ class ContractIntelligenceAgent:
                 ]
 
             raw_output = self.llm_client.complete(SYSTEM_PROMPT, messages)
+            if not raw_output or not raw_output.strip():
+                last_error = "Model returned an empty response"
+                continue
+
             cleaned = self._strip_code_fences(raw_output)
 
             try:

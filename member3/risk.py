@@ -2,7 +2,7 @@
 Risk calculation logic with rule-based scoring.
 """
 
-from schemas import ClausesInput, RiskFinding
+from .schemas import ClausesInput, RiskFinding
 
 
 def _is_long_termination_notice(text: str) -> bool:
