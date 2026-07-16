@@ -4,7 +4,7 @@ from pathlib import Path
 
 def _logo_base64() -> str:
     try:
-        logo_path = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
+        logo_path = Path(__file__).resolve().parent.parent / "assets" / "Logo.png"
         return base64.b64encode(logo_path.read_bytes()).decode("utf-8")
     except Exception:
         return ""
@@ -39,7 +39,7 @@ def render_navbar():
             white-space: nowrap;
         }
         .block-container {
-            padding-top: 0.5rem !important;
+            padding-top: 2rem !important;
         }
 
         /* Strip native Streamlit buttons into minimal aesthetic text links */
